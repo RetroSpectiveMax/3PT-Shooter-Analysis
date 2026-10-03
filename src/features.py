@@ -65,3 +65,63 @@ def vertex_ci(params, cov, a: str, b: str, n_draws=20000, seed=0):
 def breakeven_3p(pts_per_2pa: float) -> float:
     """3P% at which a three matches the average two-point attempt."""
     return pts_per_2pa / 3.0
+
+
+def load_pbp_shots(season: str = "2025-26") -> pd.DataFrame:
+    """One row per field goal attempt from play-by-play, with the shooting
+    team's score margin *before* the shot.
+
+    Columns added: SEC_ELAPSED (game seconds), MARGIN_BEFORE (shooter's team
+    minus opponent, before the shot), IS3, MADE, HOME. Rows keep file order,
+    which is chronological; score columns are forward-filled because only
+    scoring events carry a score.
+    """
+    p = pd.read_parquet(PROCESSED / f"pbp_{season}.parquet")
+    p["gameId"] = p["gameId"].astype(str)
+    p["scoreHome"] = pd.to_numeric(p["scoreHome"], errors="coerce")
+    p["scoreAway"] = pd.to_numeric(p["scoreAway"], errors="coerce")
+    p["scoreHome"] = p.groupby("gameId")["scoreHome"].ffill().fillna(0)
+    p["scoreAway"] = p.groupby("gameId")["scoreAway"].ffill().fillna(0)
+    # score before this event = score after the previous event
+    p["HOME_BEFORE"] = p.groupby("gameId")["scoreHome"].shift(1).fillna(0)
+    p["AWAY_BEFORE"] = p.groupby("gameId")["scoreAway"].shift(1).fillna(0)
+
+    m = p["clock"].str.extract(r"PT(\d+)M([\d.]+)S").astype(float)
+    remaining = m[0] * 60 + m[1]
+    reg = p["period"].clip(upper=4)
+    ot = (p["period"] - 4).clip(lower=0)
+    start = np.where(p["period"] <= 4, (p["period"] - 1) * 720, 2880 + (ot - 1) * 300)
+    length = np.where(p["period"] <= 4, 720, 300)
+    p["SEC_ELAPSED"] = start + (length - remaining)
+
+    s = p[p["isFieldGoal"] == 1].copy()
+    tg = pd.read_parquet(PROCESSED / "team_games.parquet")[["GAME_ID", "TEAM_ID", "HOME"]]
+    tg["GAME_ID"] = tg["GAME_ID"].astype(str)
+    s = s.merge(tg, left_on=["gameId", "teamId"], right_on=["GAME_ID", "TEAM_ID"], how="left")
+    own = np.where(s["HOME"] == 1, s["HOME_BEFORE"], s["AWAY_BEFORE"])
+    opp = np.where(s["HOME"] == 1, s["AWAY_BEFORE"], s["HOME_BEFORE"])
+    s["MARGIN_BEFORE"] = own - opp
+    s["IS3"] = (s["shotValue"] == 3).astype(int)
+    s["MADE"] = (s["actionType"] == "Made Shot").astype(int)
+    return s[["gameId", "TEAM_ID", "period", "SEC_ELAPSED", "MARGIN_BEFORE", "IS3", "MADE",
+              "shotDistance", "HOME", "actionNumber", "personId"]].rename(
+        columns={"gameId": "GAME_ID", "actionNumber": "GAME_EVENT_ID", "personId": "PLAYER_ID"})
+
+
+def load_threes_with_zone(season: str = "2025-26") -> pd.DataFrame:
+    """Chronological three-point attempts with margin (from play-by-play) and
+    shot zone (from the shot chart). Keeps file order, which is time order.
+
+    Adds ZONE: 'corner' / 'above_break' / 'other' (backcourt etc.).
+    """
+    s = load_pbp_shots(season)
+    s = s[s["IS3"] == 1].copy()
+    z = pd.read_parquet(PROCESSED / f"shots_{season}.parquet",
+                        columns=["GAME_ID", "GAME_EVENT_ID", "SHOT_ZONE_BASIC", "SHOT_DISTANCE"])
+    z["GAME_ID"] = z["GAME_ID"].astype(str)
+    s = s.merge(z, on=["GAME_ID", "GAME_EVENT_ID"], how="left", validate="one_to_one")
+    s["ZONE"] = np.select(
+        [s["SHOT_ZONE_BASIC"].isin(["Left Corner 3", "Right Corner 3"]),
+         s["SHOT_ZONE_BASIC"] == "Above the Break 3"],
+        ["corner", "above_break"], default="other")
+    return s

@@ -174,7 +174,7 @@ Findings:
 - **Raw:** win rate by 3PA bucket is flat at about 0.50 (it has to be, since every game has a winner and a loser), but mean margin rises with volume, from -2.5 at 15 or fewer 3PA to +4.8 at 50+. This is mostly good teams shooting more, not proof that threes win.
 - **Adjusted (within team-season, controlling for opponent):** the squared term is positive (p about 0.006 logit, 0.013 OLS), so the curve is convex, not an inverted U. Predicted win probability falls as a team shoots more threes than its own norm, flattening above about 45.
 - **No interior optimum is identified.** Vertex estimates range from 18 to 155 depending on the model, with confidence intervals that are very wide or span implausible values (for example 41.6 to 89.8 for logit-total). By era the squared term is not significant.
-- **Interpretation:** the negative within-team association most likely reflects game state. Teams chase games with threes when trailing, and the box score cannot control for that. This is exactly the confound flagged in the plan. It does not show that taking more threes causes losses.
+- **Interpretation:** the negative within-team association most likely reflects game state. Teams chase games with threes when trailing, and the box score cannot control for that. This is exactly the confound flagged in the plan. It does not show that taking more threes causes losses. *(Section 11 tested this game-state explanation with 2025-26 play-by-play and did not find support for it.)*
 - **Extremes:** 2024-25 Celtics (47.2 3PA per game incl. playoffs, 72% wins) and 2018-19/2019-20 Rockets (45 3PA, 58-63% wins) were winning teams at very high volume.
 
 Limits: no in-game score margin yet (to be added from play-by-play); estimates cover roughly 15 to 55 3PA only.
@@ -196,5 +196,65 @@ Limits: no contested/open data, only zone and distance; the free-throw adjustmen
 
 ## 10. Next steps
 
-- Cold-streak test using `pbp_2025-26.parquet`; add score-margin control to Q1 (shot-level subset for 2025-26).
-- Stretch (Q3): pull player season stats and verify that `LeagueDashLineups` exists before relying on it.
+- Done since this section was written: cold-streak test (section 12) and Q3 roles and lineups (section 13).
+- Remaining: README charts, fresh-clone reproducibility test, repo size decision for `data/processed`, publish.
+
+---
+
+## 11. Q1 follow-up: score-margin control (`notebooks/03_q1b_margin_control.ipynb`)
+
+**Housekeeping (2026-10-02):** the OneDrive original was renamed to `C:\Users\maxmi\OneDrive\Desktop\3ptProject_OLD_backup`. It can be deleted once you are satisfied with the new copy.
+
+**Code:** `load_pbp_shots()` in `src/features.py` builds one row per 2025-26 field goal attempt with the shooter's score margin before the shot (233,632 shots, 96,813 threes, matching the box score exactly). Scores are forward-filled because only scoring events carry them. The notebook source is `src/q1b_cells.py`.
+
+Questions were fixed before looking at results: (1) do trailing teams shoot more threes, (2) does the convex curve survive a margin control, (3) does first-half 3PA predict second-half margin once halftime margin is held fixed.
+
+Findings:
+- **Trailing teams do not shoot more threes.** The three-point share of shots is 40-43% in every score state (41.2% at trail 1-4, 42.3% at trail 15+, 43.4% at lead 15+). Within the same team-game, +10 points of margin changes the three-point share by +0.16 points (p = 0.34). This weakens the explanation given in section 8, which should now be read as unconfirmed.
+- **The convex curve is weak in 2025-26 alone.** Without a margin control the squared term is borderline (margin p = 0.085; win p = 0.19). With a control for the team's average margin at its shots it roughly halves (0.0068 to 0.0030) and is not significant (p = 0.15 margin, 0.57 win). Single-season intervals overlap, so this is not proof that margin explains the curve.
+- **No clear optimum.** The vertex ranges from about 30 to 66 across specifications, with wide intervals.
+- **Clean-timing design** (first-half 3PA to second-half margin, controlling for halftime margin, first-half average margin and first-half FGA): the linear effect is null (-0.03 points per extra three, 95% CI -0.15 to +0.09). A U-shaped term appears (p = 0.017, minimum near 20 first-half 3PA, tails about +1 point). It is one nominal p-value among several tests, so it is treated as exploratory.
+
+**Conclusion:** Q1 has no clear optimum. The earlier convex pattern is weak and unstable, and the 'game state' explanation did not hold up in the shot data. Caveat: average in-game margin is partly an outcome (correlation 0.87 with final margin), so the margin-controlled models are a robustness check, not a causal estimate.
+
+
+---
+
+## 12. Cold-streak test (`notebooks/04_cold_streak.ipynb`)
+
+**Code:** `load_threes_with_zone()` in `src/features.py` (play-by-play margin plus shot-chart zone, matched one-to-one on `GAME_ID` and `GAME_EVENT_ID`; all 233,632 shots matched, same shooter in every row). Cell source: `src/cold_cells.py`.
+
+**Pre-specified definitions:** cold = the shooting team's 3P% over its previous N threes in the same game is at most 25% (N = 8, 10, 15); hot = at least 50%; outcome = whether the next three goes in. Controls: shooter fixed effects, shot distance, zone, score margin, home. Game fixed effects are deliberately left out because they create a mechanical negative bias with within-game windows. Standard errors clustered by game.
+
+Findings (96,813 threes, 2025-26):
+- **Cold does not predict the next three.** The adjusted effect is -0.4, -0.1 and -0.1 points of make probability for N = 8, 10, 15 (95% CIs roughly -1.2 to +1.0, p from 0.35 to 0.87). Raw 3P% after a cold window is 35.2-35.4% against 35.7-36.1% in the middle group.
+- **No hot hand either.** After a hot window the next three is a little less likely to go in (-0.9 to -1.5 points, significant at N = 8 and 10, not at 15). Shuffling outcomes within each team-game shows part of that sign is a finite-sequence artifact (shuffled gaps of about -0.2 to -0.3 points); the excess is about -1 point at N = 8 and about zero at N = 10 and 15.
+- Excluding the last five minutes of regulation does not change the result.
+- **The Spurs Game 4 pattern is within chance.** Across 2,611 team-games with 8+ threes per half, 73 had a 50%+ first half and 25%-or-worse second half, against about 67 expected from shooter-level chance (95% simulated range 52-83, p = 0.24). First-half and second-half 3P% are uncorrelated (r = -0.003).
+
+**Conclusion:** a null result, which the plan said is a valid finding. Over windows of 8 to 15 threes, a cold stretch does not make the next three worse by more than about a point. Limits: one season, team-level windows only, no defender or openness data.
+
+---
+
+## 13. Q3: roles and lineups (`notebooks/05_q3_roles_lineups.ipynb`)
+
+**Data (`src/pull_roles.py`, cached in `data/raw/roles/`, log `data/pull_roles.log`):** `LeagueDashPlayerStats` (Base and Advanced), `LeagueDashPlayerBioStats` (height) and `LeagueDashLineups` (five-man, Advanced) for 12 regular seasons. `LeagueDashLineups` exists in `nba_api`. Like the shot chart, the league-wide request is **silently cut to 2,000 rows** (Atlanta alone has 508 lineups in 2025-26, but only 65 appear in the league-wide result), so lineups are pulled one team at a time. Total: 185,228 lineups; 12,953 with at least 20 minutes; 12,498 of those have a role for all five players.
+
+**Method (pre-specified):** players with at least 300 minutes (4,871 player-seasons); features z-scored within season (3PA rate, 3PA per 36, usage, assist %, OREB %, DREB %, height, blocks per 36); k-means with k chosen from 4 to 8 by silhouette; lineup net rating regressed on role counts, weighted by possessions, with team-season fixed effects and errors clustered by team-season.
+
+Findings:
+- **The clusters are weak.** Silhouette is highest at the smallest k allowed (0.21 at k = 4, falling to 0.18 at k = 8), which means players form a continuum, not distinct types. The four groups are big men (3PA rate 0.08), a high-3PA-rate group of wings and forwards (0.57, called "shooter"), high-usage guards (usage and assists highest, called "creator") and a mixed group of wings. The labels are descriptive.
+- **No evidence for diminishing returns.** The squared shooter-count term is positive and not significant (p = 0.24). The simpler count of players with 3PA rate of at least 50% gives the same answer (p = 0.67 for the square). There are very few lineups with 4 or 5 shooters (55 and 1), so the data cannot say anything about extreme mixes.
+- **Role differences are modest and depend on the reference.** Replacing a creator with any other role is associated with lower net rating: shooter -0.7 (p = 0.04), big -0.8 (p = 0.10), mixed wing -1.3 (p = 0.001), in points per 100 possessions. This most likely reflects player quality (creators are usually a team's best players) and not the role itself.
+- **Era:** the shooter coefficient is about -1.2 in 2014-18 and 2018-22 and about +0.1 in 2022-26 (standard errors about 0.6), so the shooter penalty relative to creators disappears in the latest era. This is descriptive and was not tested formally.
+
+**Conclusion:** there is no clear optimal shooter count and no sign of diminishing returns at observed values, but the analysis cannot separate role from player quality, and role clusters are not well separated. Treat Q3 as exploratory.
+
+---
+
+## 14. Publishing (2026-10-02)
+
+- **App:** `app.py` (Streamlit, plotly). Tabs: findings, league trends, teams (filter by season, team, 3PA, games, win %; choose axes), players (filter by volume, break-even; sortable table), 3PA curve (model overlays with 95% bands), cold streaks (choose N and cold/hot cut-offs; only N = 8, 10, 15 with 25%/50% are marked pre-specified), lineups (filter by role counts, team, player, minutes), break-even calculator, about. It reads `data/app/*.parquet`, built by `src/build_app_data.py`. The cold-streak grid and lineup model in the app reproduce the notebook numbers exactly (for example N = 10: cold -0.146 pp, hot -0.894 pp; shooter coefficient -1.335).
+- **Figures:** five charts for the README in `docs/figures/`, made by `src/make_figures.py` from `data/app/`.
+- **Repo size:** `data/processed/` (about 67 MB, mostly one 17 MB play-by-play file and twelve 2-2.5 MB shot files) is gitignored and rebuilt by the pull scripts. `data/app/` is under 1 MB and is committed. Git LFS was not needed.
+- **Reproducibility test:** fresh clone, new virtual environment, `pip install -r requirements.txt`; results recorded below.
