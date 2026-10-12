@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3PT Shooter Analysis</title>
+<style>
+  body { font-family: "Helvetica Neue", Arial, sans-serif; max-width: 860px; margin: 0 auto; padding: 24px; color: #222; line-height: 1.5; }
+  h1 { margin-bottom: 4px; }
+  .sub { color: #666; margin-top: 0; }
+  .cta { display: inline-block; background: #2b3a4f; color: #fff; padding: 10px 18px; border-radius: 6px; text-decoration: none; margin: 8px 8px 8px 0; }
+  .cta.alt { background: #f4a45b; color: #222; }
+  figure { margin: 24px 0; }
+  img { max-width: 100%; border: 1px solid #ddd; border-radius: 4px; }
+  figcaption { color: #555; font-size: 14px; }
+</style>
+</head>
+<body>
+<h1>3PT Shooter Analysis</h1>
+<p class="sub">How many threes should an NBA team take, how accurate must a shooter be, and does being "cold" matter? NBA.com data, 2014-15 to 2025-26.</p>
+
+<p>
+  <a class="cta" href="shot_explorer/index.html?season=2015-16">Open the shot explorer</a>
+  <a class="cta alt" href="https://github.com/RetroSpectiveMax/3PT-Shooter-Analysis">View the code and write-up</a>
+</p>
+
+<p>The shot explorer is a Buckets-style player view: court map of where a player shoots and how well compared with the league, shot frequency and FG% by distance, left vs right splits, home/away, win/loss and opponent filters, and two-player comparison. Pick any player-season since 2014-15.</p>
+
+<figure>
+  <a href="shot_explorer/index.html?season=2015-16"><img src="figures/shot_explorer.png" alt="Shot explorer screenshot"></a>
+  <figcaption>James Harden, 2015-16.</figcaption>
+</figure>
+
+<h2>Findings</h2>
+<figure>
+  <img src="figures/breakeven_vs_league.png" alt="Break-even 3P% vs league 3P%">
+  <figcaption>The average three has caught up to the average two: break-even rose from 32.3% to 36.6% while league 3P% stayed near 35 to 36.6%.</figcaption>
+</figure>
+<figure>
+  <img src="figures/adjusted_3pa_curve.png" alt="Adjusted 3PA curve">
+  <figcaption>No clear optimal number of team threes: the adjusted curve is flat or mildly convex, never a hill.</figcaption>
+</figure>
+<figure>
+  <img src="figures/corner_vs_above_break.png" alt="Corner vs above the break">
+  <figcaption>Corner threes are about 3 points better than above-the-break threes.</figcaption>
+</figure>
+<figure>
+  <img src="figures/cold_streak.png" alt="Cold streak result">
+  <figcaption>Cold streaks do not predict the next three, and there is no hot hand.</figcaption>
+</figure>
+<p>Full explanation of data, methods and conclusions: see <code>PROJECT_OVERVIEW.md</code> in the repository.</p>
+</body>
+</html>

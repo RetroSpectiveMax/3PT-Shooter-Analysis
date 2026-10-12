@@ -4,6 +4,7 @@ Run: streamlit run app.py
 Reads the small summary tables in data/app/ (built by src/build_app_data.py).
 """
 
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -31,7 +32,7 @@ SEASON_LIST = sorted(seasons_df.SEASON.unique())
 st.title("How many threes, and from whom? An NBA explorer")
 st.caption("NBA.com data via nba_api, 2014-15 to 2025-26. Every table here can be filtered and sorted; click a column header to sort.")
 
-tabs = st.tabs(["Findings", "League trends", "Teams", "Players", "3PA curve", "Cold streaks",
+tabs = st.tabs(["Findings", "League trends", "Teams", "Players", "Shot charts", "3PA curve", "Cold streaks",
                 "Lineups", "Break-even calculator", "About"])
 
 
@@ -155,8 +156,14 @@ with tabs[3]:
         st.caption("EDGE_PER_3PA = 3 x 3P% minus the league's points per two-point attempt that season. "
                    "High-volume shooters are mostly better shooters, so volume alone does not lower efficiency.")
 
-# ------------------------------------------------------------------ 3PA curve
+# ------------------------------------------------------------------ Shot charts
 with tabs[4]:
+    sys.path.insert(0, str(Path(__file__).parent / "src"))
+    import shot_chart_ui
+    shot_chart_ui.render()
+
+# ------------------------------------------------------------------ 3PA curve
+with tabs[5]:
     st.subheader("Q1: Is there an optimal number of team three-point attempts?")
     curves, buckets, state = load("curves"), load("volume_buckets"), load("score_state")
     models = st.multiselect("Models", sorted(curves.MODEL.unique()), default=sorted(curves.MODEL.unique()))
@@ -186,7 +193,7 @@ Estimates cover about 15-55 attempts only.""")
         st.caption("Trailing teams do not shoot more threes, so 'chasing the game' does not explain the curve.")
 
 # ------------------------------------------------------------------ Cold streaks
-with tabs[5]:
+with tabs[6]:
     st.subheader("Does a cold stretch predict the next three? (2025-26)")
     grid = load("cold_grid")
     c = st.columns(3)
@@ -219,7 +226,7 @@ next three worse by more than about a point. The small negative after hot stretc
 team-games against about 67 expected by chance.""")
 
 # ------------------------------------------------------------------ Lineups
-with tabs[6]:
+with tabs[7]:
     st.subheader("Q3: Lineups by role mix (exploratory)")
     L, lm = load("lineups"), load("lineup_model")
     lo, hi = season_range("l_seasons", (SEASON_LIST[-4], SEASON_LIST[-1]))
@@ -254,7 +261,7 @@ with tabs[6]:
                "and 4-5 shooter lineups are very rare, so treat this as descriptive.")
 
 # ------------------------------------------------------------------ Calculator
-with tabs[7]:
+with tabs[8]:
     st.subheader("Break-even calculator")
     st.markdown("Is a shooter's three worth more than an average two-point attempt that season? "
                 "This compares expected points per attempt only. It says nothing about win probability.")
@@ -272,7 +279,7 @@ with tabs[7]:
     st.caption("Ignores free throws, offensive rebounds, shot difficulty and spacing effects.")
 
 # ------------------------------------------------------------------ About
-with tabs[8]:
+with tabs[9]:
     st.subheader("About this project")
     st.markdown("""
 **Data:** NBA.com stats API via `nba_api` - team game logs and shot charts (2014-15 to 2025-26, regular season and playoffs),

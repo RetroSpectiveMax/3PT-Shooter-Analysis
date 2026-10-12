@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NBA shot explorer</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+</head>
+<body>
+<header>
+  <h1>Shot<span>Explorer</span></h1>
+  <span class="sub">NBA.com shot-chart data, regular seasons 2014-15 to 2025-26</span>
+</header>
+
+<div id="layout">
+  <aside id="controls">
+    <label>Season <select id="season"></select></label>
+    <label>Player <select id="playerA"></select></label>
+    <label class="check"><input type="checkbox" id="compare"> Compare two players</label>
+    <label id="playerBWrap" hidden>Compare with <select id="playerB"></select></label>
+
+    <div class="group" id="modeGroup">
+      <label><input type="radio" name="mode" value="Raw"> Raw data</label>
+      <label><input type="radio" name="mode" value="Smoothed" checked> Smoothed data</label>
+      <label><input type="radio" name="mode" value="Zones"> Zones</label>
+    </div>
+    <label class="check"><input type="checkbox" id="encode" checked> Encode shot frequency</label>
+    <label class="check"><input type="checkbox" id="legend" checked> Show legend</label>
+
+    <div class="slider">
+      <div class="lbl">Number of shots (per mark): <b id="nLabel">2 - 15+</b></div>
+      <div class="pair"><input type="range" id="nMin" min="1" max="15" value="2"><input type="range" id="nMax" min="1" max="15" value="15"></div>
+    </div>
+    <div class="slider">
+      <div class="lbl">Field goal %: <b id="fgLabel">0% - 100%</b></div>
+      <div class="pair"><input type="range" id="fgMin" min="0" max="100" value="0"><input type="range" id="fgMax" min="0" max="100" value="100"></div>
+    </div>
+
+    <div class="filters">
+      <label>Venue <select id="venue"><option>All</option><option>Home</option><option>Away</option></select></label>
+      <label>Result <select id="result"><option>All</option><option>Wins</option><option>Losses</option></select></label>
+      <label>Opponent <select id="opp"></select></label>
+    </div>
+    <p class="note">Color = FG% minus league average from the same spot. Square size = shot frequency.
+      Guards / Forwards / Bigs is a height-based proxy (6'5" and under, 6'10" and over).</p>
+  </aside>
+
+  <main id="main">
+    <div id="status"></div>
+    <div id="courts"></div>
+    <div id="charts">
+      <figure id="freqChart"></figure>
+      <figure id="fgChart"></figure>
+    </div>
+    <div id="lrCharts"></div>
+  </main>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

@@ -4,6 +4,10 @@ How many threes should an NBA team take, how accurate must a shooter be for his 
 
 **Interactive explorer:** `streamlit run app.py` (filter and sort teams, players and lineups; change the cold-streak definition; break-even calculator). It runs from the committed summary tables, so no data pull is needed.
 
+**Shot explorer (Buckets-style player charts):** the "Shot charts" tab in the Streamlit app, or a standalone static page in `docs/shot_explorer/` (serve it with `python -m http.server -d docs/shot_explorer` and open http://localhost:8000, or host it on GitHub Pages). Court map (raw, smoothed, zones), shot frequency and FG% by distance against the league and a position group, left vs right splits, home/away, win/loss and opponent filters, and two-player comparison, for every player-season since 2014-15 with at least 100 attempts. Colors show FG% minus the league average from the same spot. Guards/forwards/bigs is a height-based proxy.
+
+![Shot explorer](docs/figures/shot_explorer.png)
+
 ## Results at a glance
 
 | Question | Answer | Confidence |
@@ -57,6 +61,7 @@ python src/pull_roles.py        # player stats and lineups (about 20 min)
 python src/build_notebooks.py   # only if you want to rebuild notebooks 01 and 02 from source (clears outputs)
 python src/build_followups.py   # notebooks 03 to 05
 python src/build_app_data.py    # summary tables for the app (about 6 min)
+python src/build_shot_chart_data.py  # shot-chart tables for the Shot charts tab and docs/shot_explorer (about 1 min)
 python src/make_figures.py      # README charts
 ```
 
