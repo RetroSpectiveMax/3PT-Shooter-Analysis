@@ -2,6 +2,8 @@
 
 How many threes should an NBA team take, how accurate must a shooter be for his threes to help, and does being "cold" make the next shot worse? This project answers those questions with public NBA.com data (via [`nba_api`](https://github.com/swar/nba_api)) from 2014-15 to 2025-26. It started from one anecdote, the Spurs' 17-of-43 night in Game 4 of the 2026 Finals, and tests whether it says anything general.
 
+**Live site (no install needed):** https://retrospectivemax.github.io/3PT-Shooter-Analysis/ (shot explorer and findings). Full project explanation: [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md).
+
 **Interactive explorer:** `streamlit run app.py` (filter and sort teams, players and lineups; change the cold-streak definition; break-even calculator). It runs from the committed summary tables, so no data pull is needed.
 
 **Shot explorer (Buckets-style player charts):** the "Shot charts" tab in the Streamlit app, or a standalone static page in `docs/shot_explorer/` (serve it with `python -m http.server -d docs/shot_explorer` and open http://localhost:8000, or host it on GitHub Pages). Court map (raw, smoothed, zones), shot frequency and FG% by distance against the league and a position group, left vs right splits, home/away, win/loss and opponent filters, and two-player comparison, for every player-season since 2014-15 with at least 100 attempts. Colors show FG% minus the league average from the same spot. Guards/forwards/bigs is a height-based proxy.
